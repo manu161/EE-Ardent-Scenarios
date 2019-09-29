@@ -11,10 +11,11 @@ function init()
 -- Inicia tiempo
     globalMessage("Episode One:     Cause And Effect \n By Andrew Lacey fox_glos@hotmail.com \n Ported by Manuel Bravo manu161@hotmail.com");
 -- Crea nave
-  Ardent = PlayerSpaceship():setFaction("Human Navy"):setTemplate("Atlantis"):setCallSign("TSN Ardent"):setPosition(15000.0, -95000.0):setJumpDrive(false)
+  Ardent = PlayerSpaceship():setFaction("Human Navy"):setTemplate("Atlantis"):setCallSign("TSN Ardent"):setPosition(15000.0, -95000.0):setJumpDrive(false):setWarpDrive(true):setWarpSpeed(500)
     Sec = Nebula():setPosition(-40728.0,-59161.0):setCommsFunction(Security)
 -- Crea Comando
    tto = SpaceStation():setTemplate("Small Station"):setPosition(-1000000, -1000000):setCallSign("TSN Command")
+   temp_transmission_object = SpaceStation():setTemplate("Small Station"):setPosition(-1000000, -1000000)
 -- Crea asteroides
 placeRandomsphere(Asteroid, 50, 9075, -71750, 6500)
 placeRandomsphere(VisualAsteroid, 50, 9075, -71750, 6500)
@@ -49,12 +50,12 @@ placeRandomsphere(VisualAsteroid,15, -30385.0, -77581.0, 15000)
     end
 -- Crea Neutrales
    Verran = CpuShip():setTemplate("Flavia"):setCallSign("Verran"):setFaction("Human Navy"):setPosition(-70000.0, -91000.0):orderRoaming():setCommsScript("")
-   Verran:setDescription("A Drenni civillian transport. ID: 487G3")
    CIV_TR = CpuShip():setTemplate("Personnel Freighter 1"):setCallSign("CIV TR"):setFaction("Human Navy"):setPosition(15000.0, -57500.0):orderRoaming():setCommsScript("")
-   CIV_TR:setDescription("Official Manifest lists 46 Passangers, 8 Eggs and 6 Crew.")
+   CIV_TR:setDescriptions("A Drenni civillian transport. ID: 487G3","Official Manifest lists 46 Passangers, 8 Eggs and 6 Crew.")
 -- Crea estaciones
    Outpost_12 = SpaceStation():setTemplate("Small Station"):setCallSign("Outpost 12"):setFaction("Human Navy"):setPosition(-30000.0, -75000.0)
-   Outpost_12:setCommsFunction(O12_calls)   
+   Outpost_12:setCommsFunction(O12_calls)
+   Outpost_12:setDescription("One of 13 Drenni space stations in this star system.")
    Science_Facility_4 = SpaceStation():setTemplate("Small Station"):setCallSign("Science Facility 4"):setFaction("Human Navy"):setPosition(-70000.0, -10000.0)
    Science_Facility_4:setCommsFunction(SF4_calls)
 -- Variables de la mision
@@ -75,28 +76,12 @@ function O12_calls()
  
 end
 
-function SF4_calls()
-if mission_state == missionSF4 and Ardent:isDocked(Science_Facility_4) then
-setCommsMessage("This facility is a joint USFP and Drenni operation, attempting to collaboratively develop some of the more powerful Drenni technologies. TSN Command considers this a top priority. Which is why we were alarmed when our recent scans of the quadrant detected enemy vessels hidden in the nearby nebular. Their proximity to such a valuable asset is unacceptable.")
-        addCommsReply("Accept", function()
-            setCommsMessage([[Enter the nebula and deal with the enemy threat.]])
-        mission_state = missionDistance
-         end)
-elseif mission_state == missionBH then 
-setCommsMessage([[Experiment... sabotaged... explossions... chainreaction... can t... Help... contact... Please...]])
-else
- setCommsMessage("This facility is a joint USFP and Drenni operation, attempting to collaboratively develop some of the more powerful Drenni technologies, you're wellcome to the sector")
-end
-
-
-end
-
 function tto_calls()
   if mission_state == missionStartState then
      setCommsMessage([[Welcome to Drenni territory. The Drenni that populate this region of space are a scientifically advanced bipedal lizard race that have developed a number of unique technologies. They have colonised half a dozen of the nearby star systems and are considering membership to the USFP. But the Drenni are currently at war with the neighbouring space fairing race, an arachnid species called the Navien. If we could end the conflict it would bring stability to this part of the galaxy. After exhausting negotiation the Navien have finally agreed to send a single diplomat to the Drenni, for top secret peace talks.]])
         addCommsReply("Accept", function()
             setCommsMessage([[Good. The Navien ambassador is already aboard your ship. Deliver her to the luxury liner called the Verran for the clandestine meeting.]])
-           mission_state = missionDiplomat
+           mission_state = ambushComms
            REenvoy1 = 1
            entregat = 0
         end)
@@ -105,61 +90,55 @@ function tto_calls()
  if mission_state == missionBH and disaster < 0.0 and expo == 1 then
  setCommsMessage([[It s a disaster! Science Facility 4 has been destroyed and the classified singularity experiment it was working on is now completely out of control. The space-continuum has been ripped and the tear will continue to expand at an ever increasing rate. We predict that the quadrant will be destroyed in less than an hour with the whole star system destroyed in less than three. Try to Evacuate as many as possible !!.]])
         addCommsReply("Accept", function()
-            setCommsMessage([[Travel to within 1 UA to start beaming whoever you choose to evacuate and then escaping the quadrant at maximum warp by going to sector A5. Hurry! There isn t much time!.]])
+            setCommsMessage([[Travel to within 1 UA to start beaming whoever you choose to evacuate and then escaping the quadrant at maximum warp by going to sector A5. Hurry! There isn't much time!.]])
   Rift = BlackHole():setPosition(-70000.0, -10000.0)
   nextbh=15
   mission_state = missionEvacuation
  end)
 end
 end
-function hack()
- setCommsMessage([[The location of the diplomatic meeting has changed and is now on a need to know basis. Proceed immediately to the middle of the asteroid field in Sector B5 and await your next nav co-ordinates. We have sent you the waypoint]])
-    Ardent:commandAddWaypoint(10000.0,-71000.0)
-       entregat = 1
-end
-
 
 function missionStartState()
     tto:openCommsTo(Ardent)
 end
 
-function missionDiplomat(delta)
-    Verran:setCommsFunction(hack)
-    
-    if ifOutsideBox(Ardent, 20000.0, -100000.0, 10000, -90000.0) and entregat ~= (1) then
-    Verran:setCommsFunction(hack)
-    Verran:openCommsTo(Ardent)
+function ambushComms(delta)
+    if ifOutsideBox(Ardent, 20000.0, -100000.0, -20000.0, -70000.0) then
+        temp_transmission_object:setCallSign("Unsecured...Ch@nnel"):setCommsMessage("The loc@tion of the diplom@tic meeting has ch@nged and is now on @ need to know b@sis... Proceed immedi@tely to the middle of the @steroid field in Sector B5 and @w@it your next n@v co-ordin@tes...")
     end
 
-    if REenvoy1 == (1) and ifInsideSphere(Ardent, 10000.0, -71000.0, 5500.0) then
-       realt = 1
-    end
-    if realt == (1) then
-    realtime = realtime + delta
-      if realtime > 0.0 and entregat3 == nil then
+    mission_state = missionDiplomat
+end
+
+function missionDiplomat(delta)
+
+    if entregado4 ~= nil and entregado4 == 1 then
+      realtime = realtime + delta
+      if realtime > 15.0 and entregat3 == nil then
             Verran:sendCommsMessage(Ardent, [[Ardent, our ..... signal is .... ..... !Please ..... to 1000m of our ..... location ..... we will beam ..... diplomat aboard.]])
             entregat3 = 1
       end
-      if realtime > 60.0 and entregat3 == (1) then
-        Verran:sendCommsMessage(Ardent, [[Ardent, our ..... signal is being ..... !Please ..... to 1000m of our ..... location ..... we will beam ..... diplomat aboard.]])
-        entregat3 = 2
-      end
     end
   
-    cerca = distance(Ardent, Verran)
+    distance_ardent_verra = distance(Ardent, Verran)
     
-    if REenvoy1 == (1) and cerca < (15000.0) and entregat2 == nil then
+    if distance_ardent_verra < (40000.0) and REenvoy2 ~= (1) then
+      Verran:sendCommsMessage(Ardent, [[Ardent, our ..... signal is being ..... !Please ..... to 1000m of our ..... location ..... we will beam ..... diplomat aboard.]])
+      REenvoy2 = 1
+    end
+
+    if REenvoy1 == (1) and distance_ardent_verra < (15000.0) and entregat2 == nil then
  Verran:sendCommsMessage(Ardent, [[Ardent, our comms signal is being hacked! Please come to 1000m of our current location and we will beam the diplomat aboard. Thank you.]])
  entregat2 = 1
     end
 
-    if REenvoy1 == (1) and cerca < (1000.0) and Ardent:getShieldsActive() then
+    if REenvoy1 == (1) and distance_ardent_verra < (1000.0) and Ardent:getShieldsActive() then
     if Ardent:isCommsInactive() then
       Verran:sendCommsMessage(Ardent, [[Please, switch off the shields so we can beam aboard the diplomat.]])
     end
     end
 
-    if REenvoy1 == (1) and cerca < (1000.0) and not Ardent:getShieldsActive() then
+    if REenvoy1 == (1) and distance_ardent_verra < (1000.0) and not Ardent:getShieldsActive() then
     if Ardent:isCommsInactive() then
       Verran:sendCommsMessage(Ardent, [[The diplomat has successfully been beamed aboard. Diplomatic negotiations will begin shortly. Thank you Ardent. Verran out.]])
       REenvoy1 = 0
@@ -170,32 +149,33 @@ function missionDiplomat(delta)
     if variable_igetya == (1) and entregado4 == nil then
     if Ardent:isCommsInactive() then
     CV02:sendCommsMessage(Ardent, [[Our fake transmission brought you right into our ambush! There will be no peace and you will die here!]])
-    entregado4= 1
+    Ardent:addCustomMessage("scienceOfficer", "warning", "Enemy Ships Decloaking")
+    entregado4 = 1
     end
     end
 
-    if REenvoy1 == (1) and variable_igetya ~= (1) and ifInsideSphere(Ardent, 10000.0, -71000.0, 4500.000000) then
+    if REenvoy1 == (1) and variable_igetya ~= (1) and ifInsideSphere(Ardent, 10000.0, -71000.0, 4500.0) then
 
     CV02 = CpuShip():setTemplate("Phobos T3"):setCallSign("CV02"):setFaction("Kraylor"):setPosition(-55000.0, -49900.0):orderAttack(Ardent)
     if fleet[1] == nil then fleet[1] = {} end
     table.insert(fleet[1], CV02)
         tmp_x, tmp_y = Ardent:getPosition()
-        tmp_x2, tmp_y2 = vectorFromAngle(Ardent:getRotation() + 270.000000, 1000.000000)
+        tmp_x2, tmp_y2 = vectorFromAngle(Ardent:getRotation() + 270.000000, 1000.0)
         tmp_x, tmp_y = tmp_x + tmp_x2, tmp_y + tmp_y2
         CV02:setPosition(tmp_x, tmp_y);
         CV01 = CpuShip():setTemplate("Phobos T3"):setCallSign("CV01"):setFaction("Kraylor"):setPosition(-55000.0, -49900.0):orderAttack(Ardent)
         table.insert(fleet[1], CV01)
         tmp_x, tmp_y = Ardent:getPosition()
-        tmp_x2, tmp_y2 = vectorFromAngle(Ardent:getRotation() + 0.000000, 1000.000000)
+        tmp_x2, tmp_y2 = vectorFromAngle(Ardent:getRotation() + 0.0, 1000.0)
         tmp_x, tmp_y = tmp_x + tmp_x2, tmp_y + tmp_y2
         CV01:setPosition(tmp_x, tmp_y);
         CV03 = CpuShip():setTemplate("Phobos T3"):setCallSign("CV03"):setFaction("Kraylor"):setPosition(-55000.0, -49900.0):orderAttack(Ardent)
         table.insert(fleet[1], CV03)
         tmp_x, tmp_y = Ardent:getPosition()
-        tmp_x2, tmp_y2 = vectorFromAngle(Ardent:getRotation() + 90.000000, 1000.000000)
+        tmp_x2, tmp_y2 = vectorFromAngle(Ardent:getRotation() + 90.0, 1000.0)
         tmp_x, tmp_y = tmp_x + tmp_x2, tmp_y + tmp_y2
         CV03:setPosition(tmp_x, tmp_y);
-        variable_igetya = 1.0
+        variable_igetya = 1
     end
 end
 
@@ -210,7 +190,37 @@ end
 
 function missionSF4()
 
- if Ardent:isDocked(Science_Facility_4) and variable_SF4dock == nil then
+  if Ardent:isDocked(Science_Facility_4) and variable_SF4dock == nil then
+    Science_Facility_4:setCommsMessage("This facility is a joint USFP and Drenni operation, attempting to collaboratively develop some of the more powerful Drenni technologies. TSN Command considers this a top priority. Our latest test probe in C4 isn't responding. We'de like you to retrieve it and return it to us.")
+    probe = SupplyDrop():setPosition(-46638.0, -58319.0):setDescription("Probe")
+    variable_SF4dock = 1
+    skaraansattack = 1
+  end
+
+  if skaraansattack ~= nil and skaraansattack == 1 then
+    CV01 = CpuShip():setTemplate("Phobos T3"):setCallSign("CV01"):setFaction("Kraylor"):setPosition(6603.0, -81820.0):orderAttack(Verran):setJumpDrive(false)
+    if fleet[1] == nil then fleet[1] = {} end
+    table.insert(fleet[1], CV01)
+    CV02 = CpuShip():setTemplate("Phobos T3"):setCallSign("CV02"):setFaction("Kraylor"):setPosition(883.0, -67782.0):orderAttack(Ardent):setJumpDrive(false)
+    if fleet[2] == nil then fleet[2] = {} end
+    table.insert(fleet[2], CV02)
+    skaraansattack = 2
+  end
+
+  if variable_SF4dock ~= nil and variable_SF4dock == 1 and distance(Ardent, Probe) < 251.0 then
+    Ardent:addCustomMessage("scienceOfficer", "warning", "Probe Collected")
+    variable_SF4dock = 2
+    gotprobe = 1
+  end
+
+  if gotprobe ~= nil and gotprobe = 1 then
+    if docked_again == nil and Ardent:isDocked(Science_Facility_4) then
+      Science_Facility_4:setCommsMessage("We're detected unussual signals in the nearby nebular. Enter the nebula and investigate.")
+      docked_again = 1
+    end
+  end
+
+  if  then
     Science_Facility_4:openCommsTo(Ardent)
         KR07 = CpuShip():setTemplate("Phobos T3"):setCallSign("KR07"):setFaction("Kraylor"):setPosition(4000.0, -35900.0):orderAttack(Ardent):setJumpDrive(false)
         if fleet[6] == nil then fleet[6] = {} end
@@ -235,7 +245,7 @@ function missionSF4()
         REstartsab=10
         finalValue=irandom(1,4)
         variable_SF4dock= 1
-end
+  end
 end
 
 function Security()
@@ -305,28 +315,28 @@ else
 falla=systems[irandom(1,n)]
 if falla == "shield" then
 Sec:sendCommsMessage(Ardent, [[The saboteur slipped past us and installed a virus in the shield control matrix.]])
-        Ardent:setSystemHealth("rearshield", -1.000000)
-        getPlayerShip(-1):setSystemHealth("frontshield", -1.000000)
+        Ardent:setSystemHealth("rearshield", -1.0)
+        getPlayerShip(-1):setSystemHealth("frontshield", -1.0)
 sabo["shield"]=true
 elseif falla == "beam" then
 Sec:sendCommsMessage(Ardent, [[While we were waiting in ambush the saboteur bypassed us completely and took out the primary beam emitters.]])
-        getPlayerShip(-1):setSystemHealth("beamweapons", -1.000000)
+        getPlayerShip(-1):setSystemHealth("beamweapons", -1.0)
 sabo["beam"]=true
 elseif falla == "maneuver" then
 Sec:sendCommsMessage(Ardent, [[As we were standing guard the saboteur detonated a small thermite bomb in the navigational relays that have completely crippled the relays.]])
-        getPlayerShip(-1):setSystemHealth("maneuver", -1.000000)
+        getPlayerShip(-1):setSystemHealth("maneuver", -1.0)
 sabo["maneuver"]=true
 elseif falla == "missile" then
 Sec:sendCommsMessage(Ardent, [[My two sentries outside the torpedo tube loading area are dead. Looks like the saboteur murdered them with some kind of disruptor weapon before jamming the tube hatches closed.]])
-        getPlayerShip(-1):setSystemHealth("missilesystem", -1.000000)
+        getPlayerShip(-1):setSystemHealth("missilesystem", -1.0)
 sabo["missile"]=true
 elseif falla == "impulse" then
 Sec:sendCommsMessage(Ardent, [[The saboteur detonated a small bomb in the engine room.]])
-        getPlayerShip(-1):setSystemHealth("impulse", -1.000)
+        getPlayerShip(-1):setSystemHealth("impulse", -1.0)
 sabo["impulse"]=true
 elseif falla == "warp" then
 Sec:sendCommsMessage(Ardent,[[The saboteur has locked the Emergency shutdown trips of the warp core]])
-        getPlayerShip(-1):setSystemHealth("warp", -1.000)
+        getPlayerShip(-1):setSystemHealth("warp", -1.0)
 sabo["warp"]=true
 end
 -- next sabotage
@@ -347,6 +357,7 @@ function missionSAhuida(delta)
 Sec:setCallSign("Internal Comms - Security"):sendCommsMessage(Ardent,[[The saboteur has retreated to Cargo Bay 2. There is some kind of stealth vessel attached to the outside of the hull.]])
 Sec:setCallSign("")
         TG01 = CpuShip():setTemplate("Starhammer II"):setCallSign("TG01"):setFaction("Kraylor"):setPosition(-30000.0, -45000.0):orderAttack(Ardent)
+        TG01:setDescription("The recon vessel is transmitting a number of encrypted signals, some intended for the saboteur and others directed towards Science Facility 4.")
         if fleet[7] == nil then fleet[7] = {} end
         table.insert(fleet[7], TG01)
     tllegit = 30
@@ -355,7 +366,7 @@ Sec:setCallSign("")
 
    if tllegit ~= nil and tllegit < 0.0 and llegit == 1 then
         tmp_x, tmp_y = Ardent:getPosition()
-        tmp_x2, tmp_y2 = vectorFromAngle(Ardent:getRotation() + 180.000000, 50.000000)
+        tmp_x2, tmp_y2 = vectorFromAngle(Ardent:getRotation() + 180.0, 50.0)
         tmp_x, tmp_y = tmp_x + tmp_x2, tmp_y + tmp_y2
   Saboteur = CpuShip():setTemplate("MU52 Hornet"):setCallSign("Saboteur"):setFaction("Kraylor"):setPosition(tmp_x, tmp_y):orderRoaming()
         if fleet[4] == nil then fleet[4] = {} end
@@ -371,10 +382,7 @@ Sec:setCallSign("Internal Comms - Security"):sendCommsMessage(Ardent,[[The sabot
 Sec:setCallSign("")
     tllegit=20
     llegit6=1
-    end
-    if Ardent:isCommsInactive() and llegit6 == 1 and tllegit < 0.0 then
-TG01:sendCommsMessage(Ardent,"&&%%%213·57890%23¡¡|30ndRD921º \n \n We are receiving a number of encrypted signals. \n Some are intended for the saboteur \n and others are directed towards Science Facility 4.")
-  mission_state=missionBH
+    mission_state=missionBH
     end
 end
 
@@ -392,12 +400,13 @@ end
  if byebye == nil and Saboteur ~= nil and TG01 ~= nil and Saboteur:isValid() and TG01:isValid() and distance(Saboteur, TG01) < 1000. then
   byebye = 1
   Saboteur:destroy()
+  Ardent:addCustomMessage("scienceOfficer", "warning", "The saboteur has docked with TG01")
   jumpin = 20
 end
 
 
- if countFleet(7) < 1.000000 and countFleet(6) < 2.000000 and variable_workonce ~= (1.0) then
-        disaster = 10.000000
+ if countFleet(7) < 1.0 and countFleet(6) < 2.0 and variable_workonce ~= (1.0) then
+        disaster = 10.0
         variable_workonce = 1.0
  end
  if variable_workonce == (1.0) then 
